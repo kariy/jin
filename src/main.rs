@@ -47,8 +47,7 @@ async fn main() -> Result<()> {
         &FieldElement::from_hex_be(&contract)?,
         from_block,
         to_block,
-    )
-    .await?;
+    )?;
 
     let state = DUMP_STATE.lock().unwrap();
     let storages = state
