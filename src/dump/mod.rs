@@ -50,44 +50,43 @@ pub fn fetch_contract_storage(
     let progress_bar = ProgressBar::new(to_block - from_block);
 
     (from_block..=to_block).into_par_iter().for_each(|i| {
-        tokio::runtime::Runtime::new().unwrap().block_on(async {
-            let res = client.get_state_update(BlockId::Number(i)).await;
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let res = rt.block_on(client.get_state_update(BlockId::Number(i)));
 
-            if let Err(err) = &res {
-                println!("Got err {}", err);
-                return;
-            };
+        if let Err(err) = &res {
+            println!("Got err {}", err);
+            return;
+        };
 
-            let state_update = res.unwrap();
-            let found = state_update
-                .state_diff
-                .storage_diffs
-                .iter()
-                .find(|c| c.0 == contract);
+        let state_update = res.unwrap();
+        let found = state_update
+            .state_diff
+            .storage_diffs
+            .iter()
+            .find(|c| c.0 == contract);
 
-            if let Some((_, diffs)) = found {
-                diffs.iter().for_each(|d| {
-                    let mut state = dump_state.lock().unwrap();
-                    let exist_slot = state.storage.get(&d.key);
+        if let Some((_, diffs)) = found {
+            diffs.iter().for_each(|d| {
+                let mut state = dump_state.lock().unwrap();
+                let exist_slot = state.storage.get(&d.key);
 
-                    if let Some(slot) = exist_slot {
-                        if i <= slot.last_updated_block {
-                            return;
-                        }
+                if let Some(slot) = exist_slot {
+                    if i <= slot.last_updated_block {
+                        return;
                     }
+                }
 
-                    state.storage.insert(
-                        d.key,
-                        StorageValue {
-                            value: d.value,
-                            last_updated_block: i,
-                        },
-                    );
-                });
-            }
+                state.storage.insert(
+                    d.key,
+                    StorageValue {
+                        value: d.value,
+                        last_updated_block: i,
+                    },
+                );
+            });
+        }
 
-            progress_bar.inc(1);
-        })
+        progress_bar.inc(1);
     });
 
     progress_bar.finish_and_clear();

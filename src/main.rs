@@ -32,8 +32,7 @@ struct Cli {
     output: String,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let Cli {
         no_ui,
         output,
