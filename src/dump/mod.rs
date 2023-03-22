@@ -51,8 +51,14 @@ pub fn fetch_contract_storage(
 
     (from_block..=to_block).into_par_iter().for_each(|i| {
         tokio::runtime::Runtime::new().unwrap().block_on(async {
-            let state_update = client.get_state_update(BlockId::Number(i)).await.unwrap();
+            let res = client.get_state_update(BlockId::Number(i)).await;
 
+            if let Err(err) = &res {
+                println!("Got err {}", err);
+                return;
+            };
+
+            let state_update = res.unwrap();
             let found = state_update
                 .state_diff
                 .storage_diffs
