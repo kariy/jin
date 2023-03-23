@@ -4,11 +4,10 @@ use parallel_stream::prelude::*;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_with::serde_as;
-use starknet::core::{
-    serde::unsigned_field_element::UfeHex,
-    types::{BlockId, FieldElement},
-};
-use starknet::providers::{Provider, SequencerGatewayProvider};
+use starknet::core::{serde::unsigned_field_element::UfeHex, types::FieldElement};
+use starknet::providers::jsonrpc::models::BlockId;
+use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
+use url::Url;
 
 use std::{collections::BTreeMap, sync::Mutex, time::Duration};
 
@@ -41,7 +40,8 @@ impl DumpState {
 }
 
 // TODO: increment progress bar in every stream
-pub async fn fetch_contract_storage(
+pub async fn dump(
+    url: &'static str,
     dump_state: &'static Mutex<DumpState>,
     contract: FieldElement,
     from_block: u64,
@@ -55,8 +55,8 @@ pub async fn fetch_contract_storage(
         .collect::<Vec<u64>>()
         .into_par_stream()
         .for_each(move |i| async move {
-            let client = SequencerGatewayProvider::starknet_alpha_mainnet();
-            let res = client.get_state_update(BlockId::Number(i)).await;
+            let client = JsonRpcClient::new(HttpTransport::new(Url::parse(url).unwrap()));
+            let res = client.get_state_update(&BlockId::Number(i)).await;
 
             if let Err(err) = &res {
                 println!("Got err {}", err);
@@ -68,10 +68,10 @@ pub async fn fetch_contract_storage(
                 .state_diff
                 .storage_diffs
                 .par_iter()
-                .find_any(|c| c.0 == &contract);
+                .find_any(|c| c.address == contract);
 
-            if let Some((_, diffs)) = found {
-                diffs.par_iter().for_each(|d| {
+            if let Some(storage_diff) = found {
+                storage_diff.storage_entries.par_iter().for_each(|d| {
                     let mut state = dump_state.lock().unwrap();
                     let exist_slot = state.storage.get(&d.key);
 
