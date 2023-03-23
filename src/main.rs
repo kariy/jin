@@ -32,7 +32,8 @@ struct Cli {
     output: String,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let Cli {
         no_ui,
         output,
@@ -43,10 +44,11 @@ fn main() -> Result<()> {
 
     fetch_contract_storage(
         &DUMP_STATE,
-        &FieldElement::from_hex_be(&contract)?,
+        FieldElement::from_hex_be(&contract)?,
         from_block,
         to_block,
-    )?;
+    )
+    .await?;
 
     let state = DUMP_STATE.lock().unwrap();
     let storages = state
