@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
             .storage
             .iter()
             .map(|(key, value)| StorageSlot {
-                key: key.clone(),
+                key: *key,
                 value: value.clone(),
             })
             .collect::<Vec<_>>();
