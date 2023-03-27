@@ -24,7 +24,7 @@ pub struct StorageSlot {
 pub struct StorageValue {
     #[serde_as(as = "UfeHex")]
     pub value: FieldElement,
-    pub last_updated_block: u64,
+    pub last_updated_on_block: u64,
 }
 
 pub struct DumpState {
@@ -59,7 +59,7 @@ pub async fn dump(
             let res = client.get_state_update(&BlockId::Number(i)).await;
 
             if let Err(err) = &res {
-                println!("Got err {}", err);
+                println!("error at fetching state updates at block {i}: {err}");
                 return;
             };
 
@@ -76,7 +76,7 @@ pub async fn dump(
                     let exist_slot = state.storage.get(&d.key);
 
                     if let Some(slot) = exist_slot {
-                        if i <= slot.last_updated_block {
+                        if i <= slot.last_updated_on_block {
                             return;
                         }
                     }
@@ -85,7 +85,7 @@ pub async fn dump(
                         d.key,
                         StorageValue {
                             value: d.value,
-                            last_updated_block: i,
+                            last_updated_on_block: i,
                         },
                     );
                 });
