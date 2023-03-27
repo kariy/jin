@@ -1,7 +1,6 @@
 mod constant;
 mod dump;
-
-use std::fs;
+mod utils;
 
 use clap::Parser;
 use color_eyre::Result;
@@ -9,6 +8,7 @@ use starknet::core::types::FieldElement;
 
 use constant::DUMP_STATE;
 use dump::{dump, StorageSlot};
+use utils::dump_to_file;
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -22,13 +22,12 @@ struct Cli {
     to_block: u64,
 
     #[arg(long)]
-    no_ui: bool,
+    ui: bool,
 
     #[arg(short, long)]
     #[arg(value_name = "PATH")]
     #[arg(help = "The output file path.")]
-    #[arg(default_value = "./output/storage_slot.json")]
-    output: String,
+    output: Option<String>,
 
     #[arg(short = 'u', long)]
     #[arg(env = "STARKNET_RPC_URL")]
@@ -38,7 +37,7 @@ struct Cli {
 #[tokio::main]
 async fn main() -> Result<()> {
     let Cli {
-        no_ui,
+        ui,
         output,
         rpc_url,
         contract,
@@ -46,7 +45,9 @@ async fn main() -> Result<()> {
         from_block,
     } = Cli::parse();
 
-    if no_ui {
+    if ui {
+        todo!("dump with ui")
+    } else {
         dump(
             Box::leak(Box::new(rpc_url)),
             &DUMP_STATE,
@@ -66,10 +67,7 @@ async fn main() -> Result<()> {
             })
             .collect::<Vec<_>>();
 
-        let json = serde_json::to_string_pretty(&storages)?;
-        fs::write(output, json)?;
-    } else {
-        todo!("dump with ui")
+        dump_to_file(output, storages)?;
     }
 
     Ok(())
