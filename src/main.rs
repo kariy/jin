@@ -17,6 +17,7 @@ use utils::dump_to_file;
 #[derive(Debug, Parser)]
 struct Cli {
     #[arg(short, long)]
+    #[arg(help = "The contract address whose storage to be dumped.")]
     contract: String,
 
     #[arg(short, long)]
@@ -26,6 +27,7 @@ struct Cli {
     to_block: u64,
 
     #[arg(long)]
+    #[arg(help = "Display a UI for browsing through the contract storages.")]
     ui: bool,
 
     #[arg(short, long)]
@@ -35,6 +37,7 @@ struct Cli {
 
     #[arg(short = 'u', long)]
     #[arg(env = "STARKNET_RPC_URL")]
+    #[arg(help = "The RPC endpoint.")]
     rpc_url: String,
 }
 
