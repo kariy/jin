@@ -25,6 +25,14 @@ Options:
 
 The storage data will be saved in the `--output` file `(default: ./output/storage_slot.json)`.
 
+## Keybinds
+
+```
+<UP> Select previous item.
+<DOWN> Select next item.
+<ESC> Exit the UI.
+```
+
 ## Note
 
 _If you are using a RPC provider like INFURA, you might have to update the rate limits depending on the total of blocks you are querying because the requests will be done in parallel._
