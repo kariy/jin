@@ -3,11 +3,11 @@ mod dump;
 mod ui;
 mod utils;
 
-use std::str::FromStr;
-
 use clap::Parser;
 use color_eyre::Result;
 use starknet::core::types::FieldElement;
+use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
+use url::Url;
 
 use constant::DUMP_STATE;
 use dump::{dump, StorageSlot};
@@ -16,15 +16,18 @@ use utils::dump_to_file;
 
 #[derive(Debug, Parser)]
 struct Cli {
-    #[arg(short, long)]
+    #[arg(short = 'C', long)]
     #[arg(help = "The contract address whose storage to be dumped.")]
-    contract: String,
+    contract: FieldElement,
 
     #[arg(short, long)]
+    #[arg(value_name = "BLOCK_NUMBER")]
     from_block: u64,
 
     #[arg(short, long)]
-    to_block: u64,
+    #[arg(value_name = "BLOCK_NUMBER")]
+    #[arg(help = "By default, it will fetch until the latest block.")]
+    to_block: Option<u64>,
 
     #[arg(long)]
     #[arg(help = "Display a UI for browsing through the contract storages.")]
@@ -32,7 +35,7 @@ struct Cli {
 
     #[arg(short, long)]
     #[arg(value_name = "PATH")]
-    #[arg(help = "The output file path.")]
+    #[arg(help = "The output file path. Default: ./output/storage_slot.json")]
     output: Option<String>,
 
     #[arg(short = 'u', long)]
@@ -59,16 +62,22 @@ async fn main() -> Result<()> {
         from_block,
     } = Cli::parse();
 
+    let to_block = if let Some(block) = to_block {
+        block
+    } else {
+        fetch_latest_block(&rpc_url).await?
+    };
+
     let config = Config {
         to_block,
         from_block,
-        contract: FieldElement::from_str(&contract)?,
+        contract,
     };
 
     dump(
         Box::leak(Box::new(rpc_url)),
         &DUMP_STATE,
-        FieldElement::from_hex_be(&contract)?,
+        contract,
         from_block,
         to_block,
     )
@@ -95,4 +104,9 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn fetch_latest_block(rpc_url: impl AsRef<str>) -> Result<u64> {
+    let client = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url.as_ref()).unwrap()));
+    client.block_number().await.map_err(|e| e.into())
 }
