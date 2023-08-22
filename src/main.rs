@@ -7,6 +7,7 @@ use clap::Parser;
 use color_eyre::Result;
 use starknet::core::types::FieldElement;
 use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
+use starknet::providers::Provider;
 use url::Url;
 
 use constant::DUMP_STATE;

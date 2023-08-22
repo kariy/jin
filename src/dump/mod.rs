@@ -4,9 +4,10 @@ use parallel_stream::prelude::*;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_with::serde_as;
+use starknet::core::types::{BlockId, MaybePendingStateUpdate};
 use starknet::core::{serde::unsigned_field_element::UfeHex, types::FieldElement};
-use starknet::providers::jsonrpc::models::BlockId;
 use starknet::providers::jsonrpc::{HttpTransport, JsonRpcClient};
+use starknet::providers::Provider;
 use url::Url;
 
 use std::{collections::BTreeMap, sync::Mutex, time::Duration};
@@ -63,9 +64,12 @@ pub async fn dump(
                 return;
             };
 
-            let state_update = res.unwrap();
-            let found = state_update
-                .state_diff
+            let state_diff = match res.unwrap() {
+                MaybePendingStateUpdate::Update(state_update) => state_update.state_diff,
+                MaybePendingStateUpdate::PendingUpdate(state_update) => state_update.state_diff,
+            };
+
+            let found = state_diff
                 .storage_diffs
                 .par_iter()
                 .find_any(|c| c.address == contract);
